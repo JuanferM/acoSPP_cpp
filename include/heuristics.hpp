@@ -25,8 +25,8 @@ void GreedyImprovement(
         bool deep = true,
         char* column = nullptr);
 
-// GRASP for the Set Packing Problem
-void ReactiveGRASP(
+// ACO for the Set Packing Problem
+void ACO(
         const int m,
         const int n,
         const int* C,

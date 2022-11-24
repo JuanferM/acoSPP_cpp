@@ -16,7 +16,7 @@ std::tuple<char*, int, char*> GreedyConstruction(
     for(i = 0; i < n; i++) x[i] = 0;
 
     // Indices of utilities in utilities decreasing order
-    size_t *u_order = argsort(n, U); // DON'T FORGET TO DELETE
+    std::vector<int> u_order = argsort(n, U); // DON'T FORGET TO DELETE
     // We set the variable with the greatest utility to 1
     x[u_order[0]] = 1;
     // Selecting that variable means that we must select the
@@ -38,7 +38,6 @@ std::tuple<char*, int, char*> GreedyConstruction(
         x[u_order[i++]] = valid;
     }
 
-    delete[] u_order;
     return std::make_tuple(x, dot(n, x, C), column);
 }
 
