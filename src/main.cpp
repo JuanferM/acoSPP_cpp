@@ -13,8 +13,12 @@
 
 // Paramètres ACO
 #define NUM_RUN         1
-#define NUM_ITER        200
-
+#define MAX_ITER        200
+#define MAX_ANTS        15
+#define PHI_INIT        1.0
+#define RHO_E           0.8
+#define PHI_NUL         0.001
+#define ITER_STAGNANT   8
 #define NUM_DIVISION    20
 #define DEEPSEARCH      true
 
@@ -33,9 +37,9 @@ int main() {
 
     m_print(std::cout, _CLRd, "Etudiants : MERCIER et PICHON\n", _CLR);
     #if !USE_GLPK
-        #if NUM_ITER < 2 // We need at least two iterations or else the plots
-            #undef NUM_ITER //break
-            #define NUM_ITER 2
+        #if MAX_ITER < 2 // We need at least two iterations or else the plots
+            #undef MAX_ITER //break
+            #define MAX_ITER 2
         #endif
         #if NUM_RUN < 1
             #undef NUM_RUN
@@ -45,13 +49,28 @@ int main() {
             #undef MAX_THREADS
             #define MAX_THREADS 10
         #endif
+        #if ITER_STAGNANT > MAX_ITER
+            #undef ITER_STAGNANT
+            #define ITER_STAGNANT int(MAX_ITER/10)
+        #endif
+        #if MAX_ANTS < 1
+            #undef MAX_ANTS
+            #define MAX_ANTS 1
+        #endif
 
         INIT_TIMER(); srand(time(NULL));
         if(PARALLEL) omp_set_num_threads(MAX_THREADS);
 
-        const int _NBD_ = NUM_DIVISION > NUM_ITER ? NUM_ITER : NUM_DIVISION;
+        const int _NBD_ = NUM_DIVISION > MAX_ITER ? MAX_ITER : NUM_DIVISION;
+        const float RHO_D = PHI_INIT * (1.0 - RHO_E);
         m_print(std::cout, _CLP, "\nnombre de runs\t\t: ", NUM_RUN);
-        m_print(std::cout, "\nnombre d'itérations\t: ", NUM_ITER);
+        m_print(std::cout, "\nnombre d'itérations\t: ", MAX_ITER);
+        m_print(std::cout, "\nnombre de fourmis\t: ", MAX_ANTS);
+        m_print(std::cout, "\nvaleur initiale ϕ\t: ", PHI_INIT);
+        m_print(std::cout, "\ntaux d'évaporation\t: ", RHO_E);
+        m_print(std::cout, "\ntaux de dépôt\t\t: ", RHO_D);
+        m_print(std::cout, "\nseuil phéromone nul\t: ", PHI_NUL);
+        m_print(std::cout, "\nmax. cycles stagnants\t: ", ITER_STAGNANT);
         m_print(std::cout, "\nparallélisation\t\t: ", (PARALLEL ? "oui" : "non"));
         if(PARALLEL)
             m_print(std::cout, "\nnombre de threads\t: ", MAX_THREADS);
@@ -62,17 +81,19 @@ int main() {
         m_print(std::cout, "\nmode silencieux\t\t: ", (SILENT_MODE ? "oui" : "non"));
         m_print(std::cout, "\nmode intéractif\t\t: ", (INTERACTIVE ? "oui" : "non"), "\n\n", _CLR);
 
-        float t(0), *U(nullptr);
         char *A(nullptr);
-        int ins(0), run(0), div(0), m(-1), n(-1), *C(nullptr);
-        std::vector<int> zInits(NUM_ITER, 0),
-                         zAmels(NUM_ITER, 0),
-                         zBests(NUM_ITER, 0);
+        float t(0), *U(nullptr), *phi(nullptr);
+        int ins(0), run(0), div(0), zinit(-1), zls(-1), zbest(-1),
+            m(-1), n(-1), *C(nullptr);
+        // Vecteur de phéromones
+        std::vector<int> zInits(MAX_ITER * MAX_ANTS, 0),
+                         zAmels(MAX_ITER * MAX_ANTS, 0),
+                         zBests(MAX_ITER * MAX_ANTS, 0);
         std::vector<float> tMoy;
         auto divs = matplot::transform(
-            matplot::linspace(1, NUM_ITER, _NBD_),
+            matplot::linspace(1, MAX_ITER * MAX_ANTS, _NBD_),
             [](double x) {return (int)x;});
-        if(NUM_ITER-1 <= 1) divs[0] = 1;
+        if(MAX_ITER-1 <= 1) divs[0] = 1;
     #else
         float tt(0.f);;
         m_print(std::cout, _CLP, "\nRÉSOLUTION AVEC GLPK\n\n", _CLR);
@@ -92,16 +113,17 @@ int main() {
                 ins = 0;
             }
 
-            // Load one numerical instance
-            std::tie(m, n, C, A, U) = loadSPP(path + instance);
+            // Load one numerical instance (also init phi)
+            std::tie(m, n, C, A, U, phi) = loadSPP(path + instance, PHI_INIT);
             m_print(std::cout, _CLB, "\nInstance : ", instance, "\n", _CLR);
 
             m_print(std::cout, "Run exécutés :");
             for(run = 0; run < NUM_RUN; run++) {
                 // Run ACO NUM_RUN times
                 TIMED(t,
-                    ACO(m, n, C, A, U, zInits, zAmels, zBests,
-                        NUM_ITER, DEEPSEARCH, PARALLEL);
+                    std::tie(zinit, zls, zbest) = ACO(m, n, C, A, U,
+                        zInits, zAmels, zBests, phi, MAX_ANTS,
+                        MAX_ITER, DEEPSEARCH, PARALLEL);
                 );
                 tMoy[ins] = (!run) ? t : tMoy[ins]+t;
                 // Compute zMax, zMin and zMoy NUM_DIVISION time
@@ -118,6 +140,7 @@ int main() {
 
             // Plots
             m_print(std::cout, "\nPlot du dernier run...\n");
+            // TODO utiliser zinit, zls et zbest (titre)
             plotRunACO(instance, zInits, zAmels, zBests, PATH_PLOT, SILENT_MODE);
             // TODO plot des niveaux de phéromones
             // m_print(std::cout, "Plot des probabilités des α pour le dernier run...\n");
@@ -126,7 +149,7 @@ int main() {
             plotAnalyseACO(instance, divs, zMin, zMoy, zMax, PATH_PLOT, SILENT_MODE);
 
             /* MOST IMPORTANT SECTIONS */
-            freeSPP(C, A, U);
+            freeSPP(C, A, U, phi);
             ins++;
         #endif
     }

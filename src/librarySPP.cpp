@@ -27,13 +27,14 @@ std::vector<std::string> getfname(std::string pathtofolder) {
     return files;
 }
 
-std::tuple<int, int, int*, char*, float*> loadSPP(std::string fname)
-{
+std::tuple<int, int, int*, char*, float*, float*> loadSPP(
+        std::string fname,
+        float phiInit) {
     std::ifstream f(fname);
     std::string line("");
     std::stringstream ss("");
     int m(-1), n(-1), *C(nullptr), i(0), j(0);
-    char *A(nullptr); float *U(nullptr);
+    char *A(nullptr); float *U(nullptr), *phi(nullptr);
 
     try {
         if(f.is_open()) {
@@ -41,7 +42,8 @@ std::tuple<int, int, int*, char*, float*> loadSPP(std::string fname)
             f >> m >> n; f.ignore();
             // Creates C, U and A. Init U and A elements to zero.
             C = new int[n], U = new float[n], A = new char[n*m];
-            for(i = 0; i < n*m; i++) { A[i] = 0; if(i < n) U[i] = 0; }
+            for(i = 0; i < n*m; i++)
+                { A[i] = 0; if(i < n) U[i] = 0, phi[i] = phiInit; }
             // Read the n coefficiens of the objective function and init C
             getline(f, line); ss.str(line); ss.clear(); while(ss >> C[j++]);
             // Read the m constraints and reconstruct matrix A
@@ -59,7 +61,7 @@ std::tuple<int, int, int*, char*, float*> loadSPP(std::string fname)
     }
 
     for(i = 0; i < n; i++) U[i] = C[i]/U[i];
-    return std::make_tuple(m, n, C, A, U);
+    return std::make_tuple(m, n, C, A, U, phi);
 }
 
 void modelSPP(
@@ -178,8 +180,9 @@ bool isFeasible(
     return feasible;
 }
 
-void freeSPP(int *C, char *A, float *U) {
+void freeSPP(int *C, char *A, float *U, float *phi) {
     if(C) delete[] C, C = nullptr;
     if(A) delete[] A, A = nullptr;
     if(U) delete[] U, U = nullptr;
+    if(phi) delete[] phi, phi = nullptr;
 }

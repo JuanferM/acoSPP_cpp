@@ -1,5 +1,5 @@
-#ifndef PLOTS_H
-#define PLOTS_H
+#ifndef GRASPPLOTS_H
+#define GRASPPLOTS_H
 
 #include "librarySPP.hpp"
 
@@ -8,7 +8,7 @@
 #include <matplot/matplot.h>
 #include <matplot/util/common.h>
 
-// Plot l'examen d'un run de ACO sur
+// Plot l'examen d'un run de GRASP sur
 // une instance
 void plotRunACO(
         const std::string instance,
@@ -18,7 +18,7 @@ void plotRunACO(
         std::string save_path = "",
         bool silent_mode = false);
 
-// TODO plot des niveaux de phéromones
+// TODO plot niveaux phéromones
 // Plot des probabilités pour chaque valeur
 // de alpha
 // void plotProbaRunGRASP(
@@ -28,7 +28,7 @@ void plotRunACO(
 //         std::string save_path = "",
 //         bool silent_mode = false);
 
-// Plot le bilan de tous les runs de ACO
+// Plot le bilan de tous les runs de GRASP
 // sur une instance (plot exactement NUM_DIVISION
 // points avec NUM_DIVISION <= NUM_ITER)
 void plotAnalyseACO(
@@ -48,4 +48,4 @@ void plotCPUt(
         std::string save_path = "",
         bool silent_mode = false);
 
-#endif /* end of include guard: PLOTS_H */
+#endif /* end of include guard: GRASPPLOTS_H */

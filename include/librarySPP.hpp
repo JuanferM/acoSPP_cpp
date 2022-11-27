@@ -55,7 +55,10 @@ std::vector<std::string> getfname(std::string pathtofolder);
 //  *  C  the vector of coefficients from the objective function
 //  *  A  the binary matrix of constraints (as a 1D array)
 //  *  U  a vector of utilities computed for each variables
-std::tuple<int, int, int*, char*, float*> loadSPP(std::string fname);
+std::tuple<
+    int, int,
+    int*, char*,
+    float*, float*> loadSPP(std::string fname, float phiInit);
 
 // Models the SPP and run GLPK on instance  instance :
 void modelSPP(
@@ -76,8 +79,8 @@ bool isFeasible(
         const char* extColumn = nullptr,
         bool verbose = true);
 
-// Free  C  ,  A  and  U
-void freeSPP(int* C, char* A, float* U);
+// Free  C  ,  A  ,  U   and   phi
+void freeSPP(int* C, char* A, float* U, float* phi);
 
 // Computes indirect sort of an array (decreasing order)
 template<typename T>
