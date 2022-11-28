@@ -41,7 +41,7 @@ std::tuple<int, int, int*, char*, float*, float*> loadSPP(
             // Read m (number of constraints) and n (number of variables)
             f >> m >> n; f.ignore();
             // Creates C, U and A. Init U and A elements to zero.
-            C = new int[n], U = new float[n], A = new char[n*m];
+            C = new int[n], U = new float[n], A = new char[n*m], phi = new float[n];
             for(i = 0; i < n*m; i++)
                 { A[i] = 0; if(i < n) U[i] = 0, phi[i] = phiInit; }
             // Read the n coefficiens of the objective function and init C
@@ -180,9 +180,11 @@ bool isFeasible(
     return feasible;
 }
 
-void freeSPP(int *C, char *A, float *U, float *phi) {
+void freeSPP(int *C, char *A, float *U, float *phi, float *phi_bef, float *phi_aft) {
     if(C) delete[] C, C = nullptr;
     if(A) delete[] A, A = nullptr;
     if(U) delete[] U, U = nullptr;
     if(phi) delete[] phi, phi = nullptr;
+    if(phi_bef) delete[] phi_bef, phi_bef = nullptr;
+    if(phi_aft) delete[] phi_aft, phi_aft = nullptr;
 }

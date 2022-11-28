@@ -79,8 +79,9 @@ bool isFeasible(
         const char* extColumn = nullptr,
         bool verbose = true);
 
-// Free  C  ,  A  ,  U   and   phi
-void freeSPP(int* C, char* A, float* U, float* phi);
+// Free  C  ,  A  ,  U   and   phi (including captured phi)
+void freeSPP(int* C, char* A, float* U,
+            float* phi, float* phi_bef, float* phi_aft);
 
 // Computes indirect sort of an array (decreasing order)
 template<typename T>

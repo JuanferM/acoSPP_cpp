@@ -15,6 +15,11 @@ void plotRunACO(
         const std::vector<int>& zInits,
         const std::vector<int>& zAmels,
         const std::vector<int>& zBests,
+        const std::vector<float>& probas,
+        const int zinit,
+        const int zls,
+        const int zbest,
+        const int done_iter,
         std::string save_path = "",
         bool silent_mode = false);
 
@@ -37,6 +42,9 @@ void plotAnalyseACO(
         const std::vector<int>& zMin,
         const std::vector<double>& zMoy,
         const std::vector<int>& zMax,
+        const int allrunzmin,
+        const float allrunzmoy,
+        const int allrunzmax,
         std::string save_path = "",
         bool silent_mode = false);
 

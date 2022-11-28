@@ -1,5 +1,7 @@
 #include "heuristics.hpp"
 #include "librarySPP.hpp"
+#include <cmath>
+#include <cstdlib>
 
 struct Data;
 
@@ -11,10 +13,10 @@ std::tuple<char*, int, char*> GreedyConstruction(
         const float* U,
         float* phi,
         Data selection) {
-    bool valid = true;
+    bool valid(true), valid2(true);
     int i(0), j(0), k(0), s(0);
     float sum_phi;
-    std::vector<float> previous_probs;
+    std::vector<float> probs;
     char *x = new char[n], *column = new char[m];
     for(i = 0; i < n; i++) x[i] = 0;
 
@@ -32,47 +34,42 @@ std::tuple<char*, int, char*> GreedyConstruction(
 
     // Si on a bien l'adresse de P, on modifie sa valeur (mode sélection)
     if(selection.P) {
-        *selection.P = log10(selection.iter) / log10(selection.maxIter);
-        sum_phi = -1, previous_probs = std::vector<float>(n);
+        *selection.P = log10(selection.iter+1) / log10(selection.maxIter);
+        // Init roulette wheel probabilities
+        sum_phi = 0, probs = std::vector<float>(n);
+        for(k = 0; k < n; k++) {
+            probs[k] = sum_phi + phi[k];
+            sum_phi += phi[k];
+        }
     }
 
     // Repeat the same process with each utility until constraints
     // are eventually violated
     i = 1;
     while(s != m && i < n) {
-        if(selection.P && ((double)rand() / RAND_MAX) > *selection.P) {
-            // Init roulette wheel probabilities (once)
-            bool init = sum_phi == -1;
-            if(init) sum_phi = 0.0f;
-            for(k = 0; k < n && init; k++) {
-                previous_probs[k] = sum_phi + phi[k];
-                sum_phi += phi[k];
-            }
+        if(selection.P && ((float)rand() / (float)RAND_MAX) > *selection.P) {
+            float r = (float)rand() / (float)RAND_MAX;
 
-            k = 0, init = true;
-            float r = (double)rand()/RAND_MAX;
-            while(k < n && init) {
-                if(r < previous_probs[k]/sum_phi) {
-                    // Cette variable est choisie selon la roulette
-                    // mais est-ce que son introduction engendre un conflit?
-                    for(j = 0, valid = true; j < m; j++)
-                        valid = !(column[j] & A[INDEX(k, j)]);
-                    init = !valid; // Pas de conflit? Ok. Sinon, on vérifie
-                                   // avec les autres
-                } else k += 1;
-            }
+            // Selon la roulette, on vérifie si une variable candidate existe
+            for(k = 0, valid = false; k < n && !(valid && valid2); k++) {
+                for(j = 0, valid = true; j < m && valid && valid2; j++) {
+                    valid = !(column[j] & A[INDEX(k, j)]);
+                    valid2 = (r < probs[k]/sum_phi);
+                }
 
-            // S'il n'y a pas de variable candidate on ne fait rien. Sinon,
-            if(k < n) {
-                x[k] = 1;
-                for(j = 0, s = 0; j < m && valid; s += column[j], j++)
+                // si la variable candidate existe, la prendre en compte
+                for(j = 0, s = 0; j < m && valid && valid2; s += column[j], j++)
                     column[j] += A[INDEX(k, j)];
+                if(valid2) x[k] = valid, probs[k] = -1;
             }
+
+            i++;
         } else {
             for(j = 0, valid = true; j < m && valid; j++)
                 valid = !(column[j] & A[INDEX(u_order[i], j)]);
             for(j = 0, s = 0; j < m && valid; s += column[j], j++)
                 column[j] += A[INDEX(u_order[i], j)];
+            if(selection.P) probs[u_order[i]] = -1;
             x[u_order[i++]] = valid;
         }
     }
@@ -102,15 +99,67 @@ void GreedyImprovement(
     }
 }
 
-// TODO add missing parameters (n, z*, z**, lastIterRestart, maxIter, iter)
 void managePheromones(
+        const int n,
+        const float rhoE,
+        const float rhoD,
+        const float phiNul,
+        const int iter,
+        const int maxIter,
+        const int itStag,
         float* phi,
-        char* xbest,
-        char* xbest_iter) {
+        float** phi_bef,
+        float** phi_aft,
+        char* xbest_iter,
+        int* nbRestart,
+        bool capturePhi) {
+    int i(0);
+    bool existPhiNul(false);
 
+    for(i = 0; i < n; i++) {
+        // Pheromone evaporation
+        phi[i] = phi[i] * rhoE;
+        // Pheromone deposition
+        if(xbest_iter[i]) phi[i] = phi[i] + rhoD;
+        if(phi[i] <= phiNul) existPhiNul = true;
+    }
+
+    // Territory disturbance
+    // std::cout << itStag << " " << existPhiNul << std::endl;
+    if(itStag == 0 && existPhiNul) {
+        (*nbRestart)++;
+        // If phi_bef not initialized, copy phi into phi_bef
+        if(!(*phi_bef) && capturePhi) {
+            *phi_bef = new float[n];
+            std::copy(phi, phi+n, *phi_bef);
+        }
+        int pn = rand() % (int)ceil(0.1 * n);
+
+        // Disturb the pheromones
+        for(i = 0; i < n; i++) {
+            phi[i] = phi[i] * 0.95 * log10(iter+1)/log10(maxIter);
+            if(i < pn) {
+                float r = (float)rand() / (float)RAND_MAX,
+                      d = (1.0 - (float)iter/(float)maxIter) - 0.05;
+                phi[rand() % n] = 0.05 + r * d;
+            }
+            // Offset on the pheromones with low level
+            if(phi[i] < 0.1) {
+                float r = (float)rand() / (float)RAND_MAX,
+                      d = (1.0 - (float)iter/(float)maxIter) - 0.05;
+                phi[i] = phi[i] + 0.05 + r * d;
+            }
+        }
+
+        // If phi_aft not initialized, copy phi into phi_aft
+        if(!(*phi_aft) && capturePhi) {
+            *phi_aft = new float[n];
+            std::copy(phi, phi+n, *phi_aft);
+        }
+    }
 }
 
-std::tuple<int, int, int> ACO(
+std::tuple<int, int, int, int> ACO(
         const int m,
         const int n,
         const int* C,
@@ -119,13 +168,25 @@ std::tuple<int, int, int> ACO(
         std::vector<int>& zInits,
         std::vector<int>& zAmels,
         std::vector<int>& zBests,
+        std::vector<float>& probas,
         float* phi,
+        float** phi_bef,
+        float** phi_aft,
+        const float phiNul,
+        const float rhoE,
+        const float rhoD,
+        const int iterStagnant,
         int maxAnts,
         int maxIter,
         bool deep,
-        bool parallel) {
+        bool parallel,
+        bool restartStop,
+        int maxRestart,
+        bool capturePhi) {
     float P(0); // ant's curiosity level
-    int zinit(-1), zls(-1), zbest(-1);
+    bool keep_going(true);
+    int zinit, zls, zbest, zbest_iter;
+    int nbRestart(0), iter(0), itStag(iterStagnant);
     char *xbest(nullptr), *column(nullptr), *xbest_iter(nullptr);
     // Elaborate greedy solution
     std::tie(xbest, zinit, column) = GreedyConstruction(m, n, C, A, U);
@@ -135,43 +196,63 @@ std::tuple<int, int, int> ACO(
     if(column) delete[] column, column = nullptr;
     zls = zbest;
 
-    for(int iter = 0, zbest_iter = -1; iter < maxIter; iter++) {
-        xbest_iter = new char[n];
+    for(iter = 0; iter < maxIter && keep_going; iter++) {
+        xbest_iter = new char[n], zbest_iter = -1;
 
+        // std::cout << iter << std::endl;
         #pragma omp parallel for if(parallel)
         for(int ant = 0; ant < maxAnts; ant++) {
             char *x(nullptr), *column_ant(nullptr);
-            bool condition = ((double)rand() / RAND_MAX) > P;
+            bool condition = ((float)rand() / (float)RAND_MAX) >= P;
             Data selection = Data(iter, maxIter, &P);
 
+            // std::cout << "A" << std::endl;
             std::tie(x, zInits[iter * maxAnts + ant], column_ant) =
-                condition ? GreedyConstruction(m, n, C, A, U, phi)
-                          : GreedyConstruction(m, n, C, A, U, phi, selection);
+                condition ? GreedyConstruction(m, n, C, A, U, phi, selection)
+                          : GreedyConstruction(m, n, C, A, U, phi);
+            // std::cout << "B" << std::endl;
+            probas[iter * maxAnts + ant] = P;
             zAmels[iter * maxAnts + ant] = zInits[iter * maxAnts + ant];
+            // std::cout << "C" << std::endl;
             GreedyImprovement(m, n, C, A, x, &zAmels[iter * maxAnts + ant],
                     deep, column_ant);
 
-            #pragma omp single
+            #pragma omp critical
             if(zAmels[iter * maxAnts + ant] > zbest_iter) {
-                memcpy(xbest_iter, x, sizeof(char) * n);
+                // std::cout << "D" << std::endl;
+                std::copy(x, x+n, xbest_iter);
                 zbest_iter = zAmels[iter * maxAnts + ant];
-                // TODO add vector zBestsIter for plots
                 if(zbest_iter > zbest) {
-                    if(xbest) delete[] xbest, xbest = nullptr;
-                    memcpy(xbest, xbest_iter, sizeof(char) * n);
+                    // std::cout << "E" << std::endl;
+                    itStag = iterStagnant;
+                    zbest = zbest_iter;
+                    std::copy(xbest_iter, xbest_iter+n, xbest);
                 }
             }
 
             if(x) delete[] x, x = nullptr;
+            if(column_ant) delete[] column_ant, column_ant = nullptr;
         }
 
-        managePheromones(phi, xbest, xbest_iter);
+        // std::cout << "F" << std::endl;
+        managePheromones(n, rhoE, rhoD, phiNul, iter, maxIter, itStag--,
+                        phi, phi_bef, phi_aft, xbest_iter, &nbRestart,
+                        capturePhi);
+        if(itStag <= 0) itStag = 0;
+        if(restartStop && nbRestart == maxRestart) keep_going = false;
         if(xbest_iter) delete[] xbest_iter, xbest_iter = nullptr;
+    }
+
+    // Compute zBests using zAmels
+    zbest_iter = zAmels[0], zBests[0] = zbest_iter;
+    for(itStag = 1; itStag < maxIter*maxAnts; itStag++) {
+        zbest_iter = std::max(zbest_iter, zAmels[itStag]);
+        zBests[itStag] = zbest_iter;
     }
 
     /* MOST IMPORTANT SECTION */
     // Ne pas supprimer xbest et la renvoyer si l'on souhaite garder
     // la meilleure solution
     if(xbest) delete[] xbest, xbest = nullptr;
-    return std::make_tuple(zinit, zls, zbest);
+    return std::make_tuple(zinit, zls, zbest, iter*maxAnts);
 }

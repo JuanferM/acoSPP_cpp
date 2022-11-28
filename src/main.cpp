@@ -13,19 +13,22 @@
 
 // Paramètres ACO
 #define NUM_RUN         1
-#define MAX_ITER        200
 #define MAX_ANTS        15
+#define MAX_ITER        100
 #define PHI_INIT        1.0
 #define RHO_E           0.8
 #define PHI_NUL         0.001
 #define ITER_STAGNANT   8
-#define NUM_DIVISION    20
-#define DEEPSEARCH      true
+#define DEEPSEARCH      false
+#define RESTARTSTOP     true
+#define MAX_RESTART     2
 
-// Paramètres plot
+// Paramètres plots
+#define CAPTURE_PHI     false
 #define INTERACTIVE     false
 #define SILENT_MODE     false
 #define PATH_PLOT       ""
+#define NUM_DIVISION    20
 
 int main() {
     // This program will create different sequence of
@@ -64,8 +67,8 @@ int main() {
         const int _NBD_ = NUM_DIVISION > MAX_ITER ? MAX_ITER : NUM_DIVISION;
         const float RHO_D = PHI_INIT * (1.0 - RHO_E);
         m_print(std::cout, _CLP, "\nnombre de runs\t\t: ", NUM_RUN);
-        m_print(std::cout, "\nnombre d'itérations\t: ", MAX_ITER);
         m_print(std::cout, "\nnombre de fourmis\t: ", MAX_ANTS);
+        m_print(std::cout, "\nnombre d'itérations\t: ", MAX_ITER);
         m_print(std::cout, "\nvaleur initiale ϕ\t: ", PHI_INIT);
         m_print(std::cout, "\ntaux d'évaporation\t: ", RHO_E);
         m_print(std::cout, "\ntaux de dépôt\t\t: ", RHO_D);
@@ -78,22 +81,21 @@ int main() {
         m_print(std::cout, "\nplot des runs en \t: ", _NBD_, " points");
         if(std::string("").compare(PATH_PLOT))
             m_print(std::cout, "\nrépertoire plots \t: ", PATH_PLOT);
+        m_print(std::cout, "\ncapturer ϕ\t\t: ", (CAPTURE_PHI ? "oui" : "non"));
         m_print(std::cout, "\nmode silencieux\t\t: ", (SILENT_MODE ? "oui" : "non"));
         m_print(std::cout, "\nmode intéractif\t\t: ", (INTERACTIVE ? "oui" : "non"), "\n\n", _CLR);
 
         char *A(nullptr);
-        float t(0), *U(nullptr), *phi(nullptr);
+        float t(0), *U(nullptr), *phi(nullptr), *phi_bef(nullptr), *phi_aft(nullptr);
         int ins(0), run(0), div(0), zinit(-1), zls(-1), zbest(-1),
-            m(-1), n(-1), *C(nullptr);
+            done_iter(0), m(-1), n(-1), *C(nullptr);
         // Vecteur de phéromones
         std::vector<int> zInits(MAX_ITER * MAX_ANTS, 0),
                          zAmels(MAX_ITER * MAX_ANTS, 0),
                          zBests(MAX_ITER * MAX_ANTS, 0);
+        std::vector<float> probas(MAX_ITER * MAX_ANTS, 0.0);
         std::vector<float> tMoy;
-        auto divs = matplot::transform(
-            matplot::linspace(1, MAX_ITER * MAX_ANTS, _NBD_),
-            [](double x) {return (int)x;});
-        if(MAX_ITER-1 <= 1) divs[0] = 1;
+        std::vector<double> divs;
     #else
         float tt(0.f);;
         m_print(std::cout, _CLP, "\nRÉSOLUTION AVEC GLPK\n\n", _CLR);
@@ -104,6 +106,8 @@ int main() {
         #if USE_GLPK
             modelSPP(instance, path, &tt, VERBOSE_GLPK);
         #else
+            float allrunzmoy(0);
+            int allrunzmin(INT_MAX), allrunzmax(INT_MIN);
             std::vector<int>    zMin(_NBD_, INT_MAX),
                                 zMax(_NBD_, INT_MIN);
             std::vector<double> zMoy(_NBD_, 0);
@@ -121,35 +125,53 @@ int main() {
             for(run = 0; run < NUM_RUN; run++) {
                 // Run ACO NUM_RUN times
                 TIMED(t,
-                    std::tie(zinit, zls, zbest) = ACO(m, n, C, A, U,
-                        zInits, zAmels, zBests, phi, MAX_ANTS,
-                        MAX_ITER, DEEPSEARCH, PARALLEL);
+                    std::tie(zinit, zls, zbest, done_iter) = ACO(m, n, C, A, U,
+                        zInits, zAmels, zBests, probas, phi, &phi_bef, &phi_aft,
+                        PHI_NUL, RHO_E, RHO_D, ITER_STAGNANT, MAX_ANTS, MAX_ITER,
+                        DEEPSEARCH, PARALLEL, RESTARTSTOP, MAX_RESTART, CAPTURE_PHI);
                 );
                 tMoy[ins] = (!run) ? t : tMoy[ins]+t;
                 // Compute zMax, zMin and zMoy NUM_DIVISION time
+                divs = matplot::transform(
+                    matplot::linspace(1, done_iter/(float)MAX_ANTS, _NBD_),
+                    [](double x) {return (int)x;});
+                if(MAX_ITER-1 <= 1) divs[0] = 1;
+                int idx = 0;
                 for(div = 0; div < _NBD_; div++) {
-                    zMin[div] = std::min(zBests[divs[div]-1], zMin[div]);
-                    zMax[div] = std::max(zBests[divs[div]-1], zMax[div]);
-                    zMoy[div] += zBests[divs[div]-1];
+                    idx = (divs[div]-1)*MAX_ANTS;
+                    zMin[div] = std::min(zBests[idx], zMin[div]);
+                    zMax[div] = std::max(zBests[idx], zMax[div]);
+                    zMoy[div] += zBests[idx];
                 }
+                // Compute allrunzmin, allrunzmoy and allrunzmax
+                allrunzmin = std::min(allrunzmin, zbest);
+                allrunzmax = std::max(allrunzmax, zbest);
+                allrunzmoy += zbest;
+
                 m_print(std::cout, " ", run+1);
             }
 
             // Finish computing average z values
+            allrunzmoy /= (double)NUM_RUN;
             for(div = 0; div < _NBD_; div++) zMoy[div] /= (double)NUM_RUN;
 
+            // for(int jkm = 0; jkm < n; jkm++)
+            //     std::cout << probas[jkm] << std::endl;
             // Plots
             m_print(std::cout, "\nPlot du dernier run...\n");
-            // TODO utiliser zinit, zls et zbest (titre)
-            plotRunACO(instance, zInits, zAmels, zBests, PATH_PLOT, SILENT_MODE);
-            // TODO plot des niveaux de phéromones
-            // m_print(std::cout, "Plot des probabilités des α pour le dernier run...\n");
-            // plotProbaRunGRASP(instance, alpha, proba, PATH_PLOT, SILENT_MODE);
+            plotRunACO(instance, zInits, zAmels, zBests, probas, zinit,
+                        zls, zbest, done_iter, PATH_PLOT, SILENT_MODE);
+            // TODO plot des niveaux de phéromones (use phi_bef, phi_aft)
+            // if(CAPTURE_PHI && phi_bef && phi_aft) {
+            //     m_print(std::cout, "Plot des niveaux de phéromones (premier restart)...\n");
+            //     plotProbaRunGRASP(instance, alpha, proba, PATH_PLOT, SILENT_MODE);
+            // }
             m_print(std::cout, "Bilan de l'ensemble des runs...\n");
-            plotAnalyseACO(instance, divs, zMin, zMoy, zMax, PATH_PLOT, SILENT_MODE);
+            plotAnalyseACO(instance, divs, zMin, zMoy, zMax, allrunzmin,
+                    allrunzmoy, allrunzmax, PATH_PLOT, SILENT_MODE);
 
             /* MOST IMPORTANT SECTIONS */
-            freeSPP(C, A, U, phi);
+            freeSPP(C, A, U, phi, phi_bef, phi_aft);
             ins++;
         #endif
     }

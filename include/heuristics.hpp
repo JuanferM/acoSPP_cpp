@@ -39,7 +39,7 @@ void GreedyImprovement(
         char* column = nullptr);
 
 // ACO for the Set Packing Problem
-std::tuple<int, int, int> ACO(
+std::tuple<int, int, int, int> ACO(
         const int m,
         const int n,
         const int* C,
@@ -48,10 +48,20 @@ std::tuple<int, int, int> ACO(
         std::vector<int>& zInits,
         std::vector<int>& zAmels,
         std::vector<int>& zBests,
+        std::vector<float>& probas,
         float* phi,
+        float** phi_bef,
+        float** phi_aft,
+        const float phiNul,
+        const float rhoE,
+        const float rhoD,
+        const int iterStagnant,
         int maxAnts = 15,
         int maxIter = 100,
         bool deep = true,
-        bool parallel = true);
+        bool parallel = true,
+        bool restartStop = true,
+        int maxRestart = 2,
+        bool capturePhi = false);
 
 #endif /* end of include guard: HEURISTICS_H */
