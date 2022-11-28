@@ -21,10 +21,10 @@
 #define ITER_STAGNANT   8
 #define DEEPSEARCH      false
 #define RESTARTSTOP     true
-#define MAX_RESTART     2
+#define MAX_RESTART     1
 
 // Paramètres plots
-#define CAPTURE_PHI     false
+#define CAPTURE_PHI     true
 #define INTERACTIVE     false
 #define SILENT_MODE     false
 #define PATH_PLOT       ""
@@ -155,17 +155,16 @@ int main() {
             allrunzmoy /= (double)NUM_RUN;
             for(div = 0; div < _NBD_; div++) zMoy[div] /= (double)NUM_RUN;
 
-            // for(int jkm = 0; jkm < n; jkm++)
-            //     std::cout << probas[jkm] << std::endl;
             // Plots
             m_print(std::cout, "\nPlot du dernier run...\n");
             plotRunACO(instance, zInits, zAmels, zBests, probas, zinit,
                         zls, zbest, done_iter, PATH_PLOT, SILENT_MODE);
-            // TODO plot des niveaux de phéromones (use phi_bef, phi_aft)
-            // if(CAPTURE_PHI && phi_bef && phi_aft) {
-            //     m_print(std::cout, "Plot des niveaux de phéromones (premier restart)...\n");
-            //     plotProbaRunGRASP(instance, alpha, proba, PATH_PLOT, SILENT_MODE);
-            // }
+            if(CAPTURE_PHI && phi_bef && phi_aft) {
+                m_print(std::cout, "Plot des niveaux de phéromones avant le premier restart...\n");
+                plotPhiRunACO(instance, n, phi_bef, true, PATH_PLOT, SILENT_MODE);
+                m_print(std::cout, "Plot des niveaux de phéromones après le premier restart...\n");
+                plotPhiRunACO(instance, n, phi_aft, false, PATH_PLOT, SILENT_MODE);
+            }
             m_print(std::cout, "Bilan de l'ensemble des runs...\n");
             plotAnalyseACO(instance, divs, zMin, zMoy, zMax, allrunzmin,
                     allrunzmoy, allrunzmax, PATH_PLOT, SILENT_MODE);
@@ -186,6 +185,7 @@ int main() {
         // Plots
         m_print(std::cout, "\n\nBilan CPUt moyen (par run) pour chaque instance...\n");
         plotCPUt(fnames, tMoy, PATH_PLOT, SILENT_MODE);
+        std::cout << "the end" << std::endl;
 
         if(INTERACTIVE) {
             m_print(std::cout, _CLG, "\nMODE INTÉRACTIF: Appuyez sur ENTRER pour terminer...\n", _CLR);

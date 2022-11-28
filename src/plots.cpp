@@ -44,7 +44,7 @@ void plotRunACO(
     auto fig = matplot::figure(true);
     fig->name("Examen d'un run");
     fig->title(tit);
-    fig->size(576, 576);
+    fig->size(576, 476);
     fig->title_font_size_multiplier(1);
     matplot::xlabel("# itérations x # fourmis");
     matplot::ylabel("valeurs de z(x)");
@@ -85,37 +85,44 @@ void plotRunACO(
         matplot::save(save_path + "run_" + ins + ".png");
 }
 
-// TODO remplacer par plot des niveaux de phéromones
-// void plotProbaRunACO(
-//         const std::string instance,
-//         const std::vector<double>& alpha,
-//         const std::vector<double>& proba,
-//         std::string save_path,
-//         bool silent_mode) {
-//     int i(0), ins_i(-1);
-//     std::string ins(instance);
-//     for(i = 0; i < (int)ins.size(); i++) {
-//         if(ins[i] == '_')
-//             ins_i = i, ins.replace(i, 1,  "\\\\\\_"), i+=4;
-//         if(ins[i] == '.')
-//             ins = ins.substr(0, i);
-//     }
-//     std::string tit("GRASP-SPP | proba_{α} | " + ins);
-//
-//     auto fig = matplot::figure(true);
-//     fig->name("Probabilités p des α pour un run");
-//     fig->size(576, 576);
-//     fig->title(tit);
-//     matplot::xlabel("α");
-//     matplot::ylabel("P(α)");
-//     matplot::ylim({0, 1});
-//     matplot::xticks(alpha);
-//     matplot::bar(alpha, proba);
-//     if(!silent_mode) fig->draw();
-//     if(ins_i != -1) ins.replace(ins_i, 4, "_");
-//     if(save_path.compare(""))
-//         matplot::save(save_path + "proba_" + ins + ".png");
-// }
+void plotPhiRunACO(
+        const std::string instance,
+        const int n,
+        const float* phi,
+        bool before,
+        std::string save_path,
+        bool silent_mode) {
+    int i(0), ins_i(-1);
+    std::string ins(instance),
+                st((before) ? "avant" : "après");
+    for(i = 0; i < (int)ins.size(); i++) {
+        if(ins[i] == '_')
+            ins_i = i, ins.replace(i, 1,  "\\\\\\_"), i+=4;
+        if(ins[i] == '.')
+            ins = ins.substr(0, i);
+    }
+    std::string tit("ACO-SPP : " + ins + " | phi(x)");
+
+    auto fig = matplot::figure(true);
+    fig->name("Etat du vecteur de phéromone " +st+ " application de la procédure de perturbation");
+    fig->size(576, 476);
+    fig->title(tit);
+    matplot::xlabel("x");
+    matplot::ylabel("phi(x)");
+    matplot::ylim({0, 1});
+    matplot::xticks(matplot::linspace(1, n, n));
+    for(i = 1; i <= n; i++) {
+        matplot::line(i, 0, i, phi[i-1])
+            ->line_width(0.5)
+            .color("black")
+            .line_style("-")
+            .display_name(""); // Don't show in legend
+    }
+    if(!silent_mode) fig->draw();
+    if(ins_i != -1) ins.replace(ins_i, 4, "_");
+    if(save_path.compare(""))
+        matplot::save(save_path + "phi_" +st+"_"+ ins + ".png");
+}
 
 void plotAnalyseACO(
         const std::string instance,
@@ -158,7 +165,7 @@ void plotAnalyseACO(
     auto fig = matplot::figure(true);
     fig->name("Bilan tous runs");
     fig->title(tit);
-    fig->size(576, 576);
+    fig->size(576, 476);
     fig->title_font_size_multiplier(1);
     matplot::xlabel("Itérations");
     matplot::ylabel("valeurs de z(x)");

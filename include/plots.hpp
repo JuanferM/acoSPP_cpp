@@ -23,15 +23,15 @@ void plotRunACO(
         std::string save_path = "",
         bool silent_mode = false);
 
-// TODO plot niveaux phéromones
-// Plot des probabilités pour chaque valeur
-// de alpha
-// void plotProbaRunGRASP(
-//         const std::string instance,
-//         const std::vector<double>& alpha,
-//         const std::vector<double>& proba,
-//         std::string save_path = "",
-//         bool silent_mode = false);
+// Plot des niveaux de phéromones avant
+// et après le premier restart
+void plotPhiRunACO(
+        const std::string instance,
+        const int n,
+        const float* phi,
+        bool before = true,
+        std::string save_path = "",
+        bool silent_mode = false);
 
 // Plot le bilan de tous les runs de GRASP
 // sur une instance (plot exactement NUM_DIVISION
