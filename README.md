@@ -264,9 +264,14 @@ Où _path_ est une chaîne de caractères spécifiant le chemin vers le réperto
 * pb_100rnd0100.dat
 * pb_200rnd0100.dat
 * pb_200rnd0300.dat
+* pb_200rnd0500.dat
 * pb_200rnd0900.dat
 * pb_200rnd1500.dat
 * pb_500rnd0100.dat
 * pb_500rnd0700.dat
+* pb_500rnd0900.dat
+* pb_500rnd1100.dat
 * pb_1000rnd0100.dat
 * pb_1000rnd0500.dat
+* pb_1000rnd0700.dat
+* pb_2000rnd0700.dat
