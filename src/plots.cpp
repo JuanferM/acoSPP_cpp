@@ -110,7 +110,6 @@ void plotPhiRunACO(
     matplot::xlabel("x");
     matplot::ylabel("phi(x)");
     matplot::ylim({0, 1});
-    matplot::xticks(matplot::linspace(1, n, n));
     for(i = 1; i <= n; i++) {
         matplot::line(i, 0, i, phi[i-1])
             ->line_width(0.5)

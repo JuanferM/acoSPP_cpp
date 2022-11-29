@@ -24,7 +24,7 @@
 #define MAX_RESTART     1
 
 // Paramètres plots
-#define CAPTURE_PHI     false
+#define CAPTURE_PHI     true
 #define INTERACTIVE     false
 #define SILENT_MODE     false
 #define PATH_PLOT       ""
