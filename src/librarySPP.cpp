@@ -45,14 +45,16 @@ std::tuple<int, int, int*, char*, float*, float*> loadSPP(
             for(i = 0; i < n*m; i++)
                 { A[i] = 0; if(i < n) U[i] = 0, phi[i] = phiInit; }
             // Read the n coefficiens of the objective function and init C
-            getline(f, line); ss.str(line); ss.clear(); while(ss >> C[j++]);
+            getline(f, line); ss.str(line); ss.clear(); while(j < n && ss >> C[j++]);
             // Read the m constraints and reconstruct matrix A
             for(j = 0; j < m; j++){
                 // Read number of not null elements on constraint i (not used)
                 getline(f, line);
                 // Read indices of not null elements on constraint i
                 getline(f, line); ss.str(line); ss.clear();
-                while(ss >> i) A[INDEX(i-1, j)] = 1, U[i-1] += 1;
+                while(ss >> i)
+                    if(i > 0 && i <= n)
+                        A[INDEX(i-1, j)] = 1, U[i-1] += 1;
             }
             f.close();
         } else throw std::runtime_error("Couldn't open file " + fname);
@@ -180,11 +182,9 @@ bool isFeasible(
     return feasible;
 }
 
-void freeSPP(int *C, char *A, float *U, float *phi, float *phi_bef, float *phi_aft) {
+void freeSPP(int *C, char *A, float *U, float *phi) {
     if(C) delete[] C, C = nullptr;
     if(A) delete[] A, A = nullptr;
     if(U) delete[] U, U = nullptr;
     if(phi) delete[] phi, phi = nullptr;
-    if(phi_bef) delete[] phi_bef, phi_bef = nullptr;
-    if(phi_aft) delete[] phi_aft, phi_aft = nullptr;
 }

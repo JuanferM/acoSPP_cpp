@@ -34,7 +34,8 @@ std::tuple<char*, int, char*> GreedyConstruction(
 
     // Si on a bien l'adresse de P, on modifie sa valeur (mode sélection)
     if(selection.P) {
-        *selection.P = log10(selection.iter+1) / log10(selection.maxIter);
+        *selection.P = !selection.iter ? selection.iter
+                     : log10(selection.iter) / log10(selection.maxIter);
         // Init roulette wheel probabilities
         sum_phi = 0, probs = std::vector<float>(n);
         for(k = 0; k < n; k++) {
@@ -137,7 +138,7 @@ void managePheromones(
 
         // Disturb the pheromones
         for(i = 0; i < n; i++) {
-            phi[i] = phi[i] * 0.95 * log10(iter+1)/log10(maxIter);
+            phi[i] = phi[i] * 0.95 * (!iter ? iter : log10(iter)/log10(maxIter));
             if(i < pn) {
                 float r = (float)rand() / (float)RAND_MAX,
                       d = (1.0 - (float)iter/(float)maxIter) - 0.05;
@@ -216,6 +217,7 @@ std::tuple<int, int, int, int> ACO(
             // std::cout << "C" << std::endl;
             GreedyImprovement(m, n, C, A, x, &zAmels[iter * maxAnts + ant],
                     deep, column_ant);
+            if(column_ant) delete[] column_ant, column_ant = nullptr;
 
             #pragma omp critical
             if(zAmels[iter * maxAnts + ant] > zbest_iter) {
@@ -231,7 +233,6 @@ std::tuple<int, int, int, int> ACO(
             }
 
             if(x) delete[] x, x = nullptr;
-            if(column_ant) delete[] column_ant, column_ant = nullptr;
         }
 
         // std::cout << "F" << std::endl;
@@ -244,7 +245,7 @@ std::tuple<int, int, int, int> ACO(
     }
 
     // Compute zBests using zAmels
-    zbest_iter = zAmels[0], zBests[0] = zbest_iter;
+    zbest_iter = std::max(zls, zAmels[0]), zBests[0] = zbest_iter;
     for(itStag = 1; itStag < maxIter*maxAnts; itStag++) {
         zbest_iter = std::max(zbest_iter, zAmels[itStag]);
         zBests[itStag] = zbest_iter;

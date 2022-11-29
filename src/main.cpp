@@ -8,13 +8,13 @@
 #define VERBOSE_GLPK    false
 
 // Paramètres OpenMP
-#define PARALLEL        true
+#define PARALLEL        false
 #define MAX_THREADS     10
 
 // Paramètres ACO
 #define NUM_RUN         1
 #define MAX_ANTS        15
-#define MAX_ITER        100
+#define MAX_ITER        200
 #define PHI_INIT        1.0
 #define RHO_E           0.8
 #define PHI_NUL         0.001
@@ -164,13 +164,15 @@ int main() {
                 plotPhiRunACO(instance, n, phi_bef, true, PATH_PLOT, SILENT_MODE);
                 m_print(std::cout, "Plot des niveaux de phéromones après le premier restart...\n");
                 plotPhiRunACO(instance, n, phi_aft, false, PATH_PLOT, SILENT_MODE);
+                if(phi_bef) delete[] phi_bef, phi_bef = nullptr;
+                if(phi_aft) delete[] phi_aft, phi_aft = nullptr;
             }
             m_print(std::cout, "Bilan de l'ensemble des runs...\n");
             plotAnalyseACO(instance, divs, zMin, zMoy, zMax, allrunzmin,
                     allrunzmoy, allrunzmax, PATH_PLOT, SILENT_MODE);
 
             /* MOST IMPORTANT SECTIONS */
-            freeSPP(C, A, U, phi, phi_bef, phi_aft);
+            freeSPP(C, A, U, phi);
             ins++;
         #endif
     }
@@ -185,7 +187,6 @@ int main() {
         // Plots
         m_print(std::cout, "\n\nBilan CPUt moyen (par run) pour chaque instance...\n");
         plotCPUt(fnames, tMoy, PATH_PLOT, SILENT_MODE);
-        std::cout << "the end" << std::endl;
 
         if(INTERACTIVE) {
             m_print(std::cout, _CLG, "\nMODE INTÉRACTIF: Appuyez sur ENTRER pour terminer...\n", _CLR);
