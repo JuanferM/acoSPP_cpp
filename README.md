@@ -97,7 +97,7 @@ Où _x_ est un nombre entier strictement positif (toute valeur incorrecte sera r
 
 ### Paramètres du ACO
 #### Nombre de fourmies
-Pour modifier le nombre de fourmies maximum veuillez redéfinir MAX_ANTS (constante 
+Pour modifier le nombre de fourmies maximum veuillez redéfinir MAX_ANTS (constante
 préprocesseur dans le fichier `src/main.cpp`) :
 ```c
 #define MAX_ANTS <x>

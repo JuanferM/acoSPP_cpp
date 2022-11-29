@@ -8,7 +8,7 @@
 #define VERBOSE_GLPK    false
 
 // Paramètres OpenMP
-#define PARALLEL        false
+#define PARALLEL        true
 #define MAX_THREADS     10
 
 // Paramètres ACO
@@ -24,7 +24,7 @@
 #define MAX_RESTART     1
 
 // Paramètres plots
-#define CAPTURE_PHI     true
+#define CAPTURE_PHI     false
 #define INTERACTIVE     false
 #define SILENT_MODE     false
 #define PATH_PLOT       ""
