@@ -1,5 +1,5 @@
-#ifndef GRASPPLOTS_H
-#define GRASPPLOTS_H
+#ifndef PLOTS_H
+#define PLOTS_H
 
 #include "librarySPP.hpp"
 
@@ -8,7 +8,7 @@
 #include <matplot/matplot.h>
 #include <matplot/util/common.h>
 
-// Plot l'examen d'un run de GRASP sur
+// Plot l'examen d'un run de ACO sur
 // une instance
 void plotRunACO(
         const std::string instance,
@@ -33,7 +33,7 @@ void plotPhiRunACO(
         std::string save_path = "",
         bool silent_mode = false);
 
-// Plot le bilan de tous les runs de GRASP
+// Plot le bilan de tous les runs de ACO
 // sur une instance (plot exactement NUM_DIVISION
 // points avec NUM_DIVISION <= NUM_ITER)
 void plotAnalyseACO(
@@ -56,4 +56,4 @@ void plotCPUt(
         std::string save_path = "",
         bool silent_mode = false);
 
-#endif /* end of include guard: GRASPPLOTS_H */
+#endif /* end of include guard: PLOTS_H */
