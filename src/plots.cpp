@@ -107,6 +107,7 @@ void plotPhiRunACO(
     fig->name("Etat du vecteur de phéromone " +st+ " application de la procédure de perturbation");
     fig->size(576, 476);
     fig->title(tit);
+    fig->title_font_size_multiplier(1);
     matplot::xlabel("x");
     matplot::ylabel("phi(x)");
     matplot::ylim({0, 1});
