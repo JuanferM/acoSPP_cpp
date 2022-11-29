@@ -141,13 +141,13 @@ void managePheromones(
             phi[i] = phi[i] * 0.95 * (!iter ? iter : log10(iter)/log10(maxIter));
             if(i < pn) {
                 float r = (float)rand() / (float)RAND_MAX,
-                      d = (1.0 - (float)iter/(float)maxIter) - 0.05;
+                      d = (1.0 - (float)iter/(float)maxIter)*0.5 - 0.05;
                 phi[rand() % n] = 0.05 + r * d;
             }
             // Offset on the pheromones with low level
             if(phi[i] < 0.1) {
                 float r = (float)rand() / (float)RAND_MAX,
-                      d = (1.0 - (float)iter/(float)maxIter) - 0.05;
+                      d = (1.0 - (float)iter/(float)maxIter)*0.5 - 0.05;
                 phi[i] = phi[i] + 0.05 + r * d;
             }
         }

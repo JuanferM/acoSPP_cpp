@@ -75,6 +75,8 @@ int main() {
         m_print(std::cout, "\nseuil phéromone nul\t: ", PHI_NUL);
         m_print(std::cout, "\nmax. cycles stagnants\t: ", ITER_STAGNANT);
         m_print(std::cout, "\nparallélisation\t\t: ", (PARALLEL ? "oui" : "non"));
+        if(RESTARTSTOP)
+            m_print(std::cout, "\narrêt au restart #" + std::to_string(MAX_RESTART) + "\t: oui");
         if(PARALLEL)
             m_print(std::cout, "\nnombre de threads\t: ", MAX_THREADS);
         m_print(std::cout, "\ndescente profonde\t: ", (DEEPSEARCH ? "oui" : "non"));
