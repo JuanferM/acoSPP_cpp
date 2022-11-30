@@ -131,7 +131,6 @@ void managePheromones(
     }
 
     // Territory disturbance
-    // std::cout << itStag << " " << existPhiNul << std::endl;
     if(itStag == 0 && existPhiNul) {
         (*nbRestart)++;
         // If phi_bef not initialized, copy phi into phi_bef
