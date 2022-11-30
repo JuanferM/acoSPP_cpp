@@ -21,10 +21,10 @@
 #define ITER_STAGNANT   8
 #define DEEPSEARCH      false
 #define RESTARTSTOP     true
-#define MAX_RESTART     1
+#define MAX_RESTART     2
 
 // Paramètres plots
-#define CAPTURE_PHI     true
+#define CAPTURE_PHI     false
 #define INTERACTIVE     false
 #define SILENT_MODE     false
 #define PATH_PLOT       ""
