@@ -12,7 +12,7 @@
 #define MAX_THREADS     10
 
 // Paramètres ACO
-#define NUM_RUN         1
+#define NUM_RUN         10
 #define MAX_ANTS        15
 #define MAX_ITER        200
 #define PHI_INIT        1.0
@@ -24,10 +24,10 @@
 #define MAX_RESTART     2
 
 // Paramètres plots
-#define CAPTURE_PHI     false
+#define CAPTURE_PHI     true
 #define INTERACTIVE     false
-#define SILENT_MODE     false
-#define PATH_PLOT       ""
+#define SILENT_MODE     true
+#define PATH_PLOT       "exp/"
 #define NUM_DIVISION    20
 
 int main() {

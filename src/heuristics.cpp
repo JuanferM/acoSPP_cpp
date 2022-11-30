@@ -15,20 +15,23 @@ std::tuple<char*, int, char*> GreedyConstruction(
         Data selection) {
     bool valid(true), valid2(true);
     int i(0), j(0), k(0), s(0);
-    float sum_phi;
+    float sum_phi(0);
     std::vector<float> probs;
-    char *x = new char[n], *column = new char[m];
-    for(i = 0; i < n; i++) x[i] = 0;
+    char *x = new char[n], *column = new char[m], *phi_util = new char[n];
+    for(i = 0; i < n; i++) {
+        x[i] = 0;
+        if(phi) phi_util[i] = U[i] * phi[i];
+    }
 
     // Indices of utilities in utilities decreasing order
-    std::vector<int> u_order = phi ? argsort(n, phi) : argsort(n, U);
+    std::vector<int> order = phi ? argsort(n, phi_util) : argsort(n, U);
     // We set the variable with the greatest utility to 1
-    x[u_order[0]] = 1;
+    x[order[0]] = 1;
     // Selecting that variable means that we must select the
     // corresponding column in the matrix A and check if the
     // constraints are still verified
     for(j = 0; j < m; j++) {
-        column[j] = A[INDEX(u_order[0], j)];
+        column[j] = A[INDEX(order[0], j)];
         s += column[j];
     }
 
@@ -42,6 +45,8 @@ std::tuple<char*, int, char*> GreedyConstruction(
             probs[k] = sum_phi + phi[k];
             sum_phi += phi[k];
         }
+
+        probs[order[0]] = -1;
     }
 
     // Repeat the same process with each utility until constraints
@@ -67,11 +72,11 @@ std::tuple<char*, int, char*> GreedyConstruction(
             i++;
         } else {
             for(j = 0, valid = true; j < m && valid; j++)
-                valid = !(column[j] & A[INDEX(u_order[i], j)]);
+                valid = !(column[j] & A[INDEX(order[i], j)]);
             for(j = 0, s = 0; j < m && valid; s += column[j], j++)
-                column[j] += A[INDEX(u_order[i], j)];
-            if(selection.P) probs[u_order[i]] = -1;
-            x[u_order[i++]] = valid;
+                column[j] += A[INDEX(order[i], j)];
+            if(selection.P) probs[order[i]] = -1;
+            x[order[i++]] = valid;
         }
     }
 
@@ -200,32 +205,26 @@ std::tuple<int, int, int, int> ACO(
     for(iter = 0; iter < maxIter && keep_going; iter++) {
         xbest_iter = new char[n], zbest_iter = -1;
 
-        // std::cout << iter << std::endl;
         #pragma omp parallel for if(parallel)
         for(int ant = 0; ant < maxAnts; ant++) {
             char *x(nullptr), *column_ant(nullptr);
             bool condition = ((float)rand() / (float)RAND_MAX) >= P;
             Data selection = Data(iter, maxIter, &P);
 
-            // std::cout << "A" << std::endl;
             std::tie(x, zInits[iter * maxAnts + ant], column_ant) =
                 condition ? GreedyConstruction(m, n, C, A, U, phi, selection)
                           : GreedyConstruction(m, n, C, A, U, phi);
-            // std::cout << "B" << std::endl;
             probas[iter * maxAnts + ant] = P;
             zAmels[iter * maxAnts + ant] = zInits[iter * maxAnts + ant];
-            // std::cout << "C" << std::endl;
             GreedyImprovement(m, n, C, A, x, &zAmels[iter * maxAnts + ant],
                     deep, column_ant);
             if(column_ant) delete[] column_ant, column_ant = nullptr;
 
             #pragma omp critical
             if(zAmels[iter * maxAnts + ant] > zbest_iter) {
-                // std::cout << "D" << std::endl;
                 std::copy(x, x+n, xbest_iter);
                 zbest_iter = zAmels[iter * maxAnts + ant];
                 if(zbest_iter > zbest) {
-                    // std::cout << "E" << std::endl;
                     itStag = iterStagnant;
                     zbest = zbest_iter;
                     std::copy(xbest_iter, xbest_iter+n, xbest);
@@ -235,7 +234,6 @@ std::tuple<int, int, int, int> ACO(
             if(x) delete[] x, x = nullptr;
         }
 
-        // std::cout << "F" << std::endl;
         managePheromones(n, rhoE, rhoD, phiNul, iter, maxIter, itStag--,
                         phi, phi_bef, phi_aft, xbest_iter, &nbRestart,
                         capturePhi);
@@ -244,7 +242,6 @@ std::tuple<int, int, int, int> ACO(
         if(xbest_iter) delete[] xbest_iter, xbest_iter = nullptr;
     }
 
-    // Compute zBests using zAmels
     zbest_iter = std::max(zls, zAmels[0]), zBests[0] = zbest_iter;
     for(itStag = 1; itStag < maxIter*maxAnts; itStag++) {
         zbest_iter = std::max(zbest_iter, zAmels[itStag]);
