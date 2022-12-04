@@ -2,19 +2,19 @@
 Ant Colony Optimization (ACO) for the Set Packing Problem (SPP) in C++
 
 *Commande pour compiler*:
-```bash
-make
-```
+
+    make
+
 
 *Commande pour lancer le programme*:
-```bash
-./bin/DM3
-```
+
+    ./bin/DM3
+
 
 *Commande pour effacer les fichiers générer lors de la compilation*:
-```bash
-make clean
-```
+
+    make clean
+
 
 **ATTENTION:** le répertoire `instances` doit se trouver dans le même répertoire
 d'où le programme est lancé. Si le programme est lancé depuis `bin` alors `instances`
@@ -47,13 +47,13 @@ Cette bibliothèque fonctionne pour l'architecture **x86**. Un
 script (`configure.sh`, utilisant la commande _cp_) a été créé pour
 remplacer _libmatplot.so_ par une version supportant l'architecture **aarch** (ARM) si besoin.
 Pour utiliser l'architecture x86 lancez depuis votre terminal :
-```bash
-./configure.sh x86
-```
+
+    ./configure.sh x86
+
 Pour utiliser l'architecture aarch :
-```bash
-./configure.sh aarch
-```
+
+    ./configure.sh aarch
+
 
 ### GLPK
 Pour lancer GLPK sur les instances veuillez redéfinir USE_GLPK (constante préprocesseur dans le
